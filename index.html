@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>日语背单词</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="theme-color" content="#21a35a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="背单词">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root{
+  --bg:#f3f6f2; --card:#ffffff; --text:#1c2a21; --muted:#6c7b71; --line:#e1e7e2;
+  --green:#21a35a; --green-d:#178347; --lg:#a6e0bb; --grey:#e4e9e5; --red:#df5a4e; --amber:#e3a21a;
+  --btn:#eef2ef; --btn-h:#e3e9e4; --shadow:0 2px 14px rgba(20,40,28,.07);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#121614; --card:#1b211d; --text:#e4ece6; --muted:#8d9b92; --line:#2a332d;
+    --green:#2fb86a; --green-d:#27a05c; --lg:#2f6b47; --grey:#2a322d; --red:#ec6b60; --amber:#e9b241;
+    --btn:#252d28; --btn-h:#2e3832; --shadow:none;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans","Microsoft YaHei","Yu Gothic UI",sans-serif;}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px 40px;min-height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 0 10px;gap:12px}
+header h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.5px}
+nav{display:flex;gap:4px;background:var(--btn);padding:3px;border-radius:10px}
+nav button{border:0;background:transparent;padding:6px 12px;border-radius:8px;font-size:14px;color:var(--muted)}
+nav button.on{background:var(--card);color:var(--text);box-shadow:var(--shadow);font-weight:600}
+section{display:none;flex:1;flex-direction:column}
+section.on{display:flex}
+
+/* 进度条 */
+.progress{margin:6px 0 14px}
+.bar{height:10px;border-radius:6px;background:var(--grey);overflow:hidden;display:flex}
+.bar span{display:block;height:100%;transition:width .3s}
+.bar .g{background:var(--green)} .bar .lg{background:var(--lg)}
+.ptext{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-top:6px;gap:8px;flex-wrap:wrap}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:1px}
+
+.bookchip{align-self:flex-start;border:0;background:var(--card);box-shadow:var(--shadow);border-radius:20px;padding:6px 12px;font-size:13.5px;font-weight:600;display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.bookchip span{font-weight:400;color:var(--muted);font-size:12.5px}
+.bookchip:hover{background:var(--btn-h)}
+
+/* 词书 */
+.books{display:grid;gap:10px}
+.book{border:2px solid var(--line);border-radius:14px;padding:14px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;background:var(--card)}
+.book.on{border-color:var(--green)}
+.book .bn{font-size:16px;font-weight:700}
+.book .bd{grid-column:1;font-size:12.5px;color:var(--muted)}
+.book .bb{grid-column:1 / -1;height:6px;border-radius:4px;background:var(--grey);overflow:hidden;display:flex;margin-top:4px}
+.book .bb i{display:block;height:100%}
+.book .bs{grid-column:1 / -1;font-size:12px;color:var(--muted)}
+.book button{grid-row:1 / span 2;grid-column:2;border:0;border-radius:10px;padding:8px 14px;font-size:14px;font-weight:600;background:var(--green);color:#fff}
+.book.on button{background:var(--btn);color:var(--muted);cursor:default}
+
+/* 卡片 */
+.card{flex:1;background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:22px 22px 26px;
+  display:flex;flex-direction:column;align-items:center;text-align:center;min-height:360px}
+.meta{align-self:stretch;display:flex;justify-content:space-between;align-items:center;min-height:22px}
+.tag{font-size:12px;padding:2px 8px;border-radius:20px;background:var(--btn);color:var(--muted)}
+.tag.t-new{background:#e5f1ff;color:#2e6fc9} .tag.t-known{background:#e3f6ea;color:var(--green-d)} .tag.t-uncertain{background:#fff2dc;color:#b37708}
+@media (prefers-color-scheme: dark){ .tag.t-new{background:#1d2d42;color:#86b6f5} .tag.t-known{background:#1c3426;color:#6fd69a} .tag.t-uncertain{background:#3a2e15;color:#efc66e} }
+.need{font-size:12px;color:var(--amber)}
+.kana{font-size:44px;font-weight:600;margin-top:48px;letter-spacing:2px;line-height:1.25;font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif}
+.card.revealed .kana{margin-top:26px;font-size:36px}
+.word{font-size:46px;margin-top:30px;line-height:1.2;font-family:"Hiragino Mincho ProN","Yu Mincho","MS Mincho",serif;letter-spacing:2px}
+.word ruby{ruby-align:center;ruby-position:over}
+.word rt{font-size:.36em;color:var(--muted);letter-spacing:0;font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;padding-bottom:2px}
+.word.kana-only{font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;font-size:40px}
+.reading{margin-top:10px;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:15px}
+.speak{border:0;background:var(--btn);border-radius:50%;width:34px;height:34px;font-size:16px;line-height:34px;padding:0}
+.speak:hover{background:var(--btn-h)}
+.speak.sm{width:26px;height:26px;font-size:12px;line-height:26px;vertical-align:middle;margin-left:4px}
+.meaning{font-size:20px;margin-top:10px;font-weight:600}
+.pos{margin-top:12px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px}
+.pos span{font-size:12px;padding:2px 8px;border-radius:20px;background:var(--btn);color:var(--muted)}
+.pos i{font-style:normal;font-size:12px;color:var(--muted);opacity:.6;margin:0 2px}
+.wl .m small{color:var(--muted);opacity:.8;margin-right:4px}
+.ex{margin-top:22px;align-self:stretch;text-align:left;background:var(--bg);border-radius:12px;padding:12px 14px}
+.ex-jp{font-size:19px;line-height:2.3;font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif}
+.ex-jp rt{font-size:.58em;color:var(--muted);letter-spacing:0}
+.ex-jp mark rt{color:var(--green-d);opacity:.85}
+.ex-jp mark{background:transparent;color:var(--green-d);font-weight:700}
+.ex-zh{font-size:14px;color:var(--muted);margin-top:4px}
+.ask{margin-top:auto;color:var(--muted);font-size:14px;padding-top:30px}
+.result{margin-top:auto;padding-top:20px;font-size:13px;color:var(--muted)}
+.result b.ok{color:var(--green)} .result b.bad{color:var(--red)}
+
+/* 按钮区 */
+.actions{position:sticky;bottom:0;padding:14px 0 calc(10px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%);display:flex;gap:12px}
+.actions button{flex:1;border:0;border-radius:14px;padding:16px 10px;font-size:17px;font-weight:600;background:var(--btn)}
+.actions button:hover{background:var(--btn-h)}
+.actions button.primary{background:var(--green);color:#fff}
+.actions button.primary:hover{background:var(--green-d)}
+.actions button.danger{color:var(--red)}
+.actions kbd{font-size:11px;opacity:.55;font-weight:400;margin-left:6px;font-family:inherit}
+.subact{text-align:center;margin-top:-4px;min-height:20px;position:relative}
+.subact button{border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;padding:4px 8px}
+.subact button.easy{position:absolute;left:-8px;top:0}
+
+/* 完成页 */
+.done{flex:1;background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:36px 22px;text-align:center}
+.done .big{font-size:44px}
+.done h2{margin:10px 0 6px}
+.done p{color:var(--muted);margin:6px 0}
+.pill{display:inline-block;border:0;border-radius:12px;padding:12px 22px;font-size:15px;font-weight:600;background:var(--green);color:#fff;margin-top:18px}
+.pill.ghost{background:var(--btn);color:var(--text)}
+
+/* 面板 */
+.panel{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:18px;margin-bottom:14px}
+.panel h3{margin:0 0 12px;font-size:15px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--bg);border-radius:12px;padding:12px;text-align:center}
+.stat .n{font-size:24px;font-weight:700}
+.stat .l{font-size:12px;color:var(--muted);margin-top:2px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row label{font-size:14.5px}
+.row small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.row input[type=number]{width:84px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:15px;text-align:center}
+.row input[type=checkbox]{width:20px;height:20px;accent-color:var(--green)}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.btn{border:0;border-radius:10px;padding:9px 14px;background:var(--btn);font-size:14px}
+.btn:hover{background:var(--btn-h)}
+.btn.primary{background:var(--green);color:#fff}
+.btn.danger{color:var(--red)}
+.note{font-size:12.5px;color:var(--muted);line-height:1.6}
+.syncform{display:grid;gap:8px;margin-top:10px}
+.syncform input{padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:15px}
+.syncdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px;background:var(--grey)}
+.syncdot.ok{background:var(--green)} .syncdot.busy{background:var(--amber)} .syncdot.err{background:var(--red)}
+textarea{width:100%;min-height:110px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);color:var(--text);font:13px/1.5 ui-monospace,Consolas,monospace}
+.fc{display:flex;align-items:flex-end;gap:6px;height:110px;margin-top:8px}
+.fc div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:11px;color:var(--muted)}
+.fc i{display:block;width:70%;background:var(--green);border-radius:4px 4px 0 0;min-height:2px}
+.fc b{font-weight:600;color:var(--text);font-size:12px;margin-bottom:3px}
+.list{max-height:420px;overflow:auto;margin-top:8px}
+.wl{display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:8px;padding:8px 2px;border-top:1px solid var(--line);font-size:14px;align-items:center}
+.wl .s{font-size:11.5px;padding:2px 7px;border-radius:10px;background:var(--btn);color:var(--muted);white-space:nowrap}
+.wl .s.known{background:#e3f6ea;color:var(--green-d)} .wl .s.uncertain{background:#fff2dc;color:#b37708}
+.wl button.s{border:0;font:inherit;font-size:11.5px;cursor:pointer}
+.wl .s.easy{background:#ece8f7;color:#6a55b0}
+@media (prefers-color-scheme: dark){ .wl .s.easy{background:#2c2840;color:#b3a4ea} }
+@media (prefers-color-scheme: dark){ .wl .s.known{background:#1c3426;color:#6fd69a} .wl .s.uncertain{background:#3a2e15;color:#efc66e} }
+.filters{display:flex;gap:8px}
+.filters input,.filters select{flex:1;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:rgba(20,30,24,.88);color:#fff;padding:9px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9;max-width:90vw;text-align:center}
+.toast.on{opacity:1}
+@media (max-width:420px){ .kana{font-size:38px} nav button{padding:6px 9px} .wl{grid-template-columns:1fr 1fr auto}.wl .m{display:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>日语背单词</h1>
+    <nav id="nav">
+      <button data-tab="study" class="on">学习</button>
+      <button data-tab="stats">统计</button>
+      <button data-tab="library">词书</button>
+      <button data-tab="settings">设置</button>
+    </nav>
+  </header>
+
+  <section id="study" class="on">
+    <button class="bookchip" id="bookchip" data-act="books"></button>
+    <div class="progress">
+      <div class="bar"><span class="g" id="barG"></span><span class="lg" id="barLG"></span></div>
+      <div class="ptext" id="ptext"></div>
+    </div>
+    <div id="stage" style="flex:1;display:flex;flex-direction:column"></div>
+  </section>
+
+  <section id="stats"></section>
+  <section id="library"></section>
+
+  <section id="settings">
+    <div class="panel" id="syncPanel">
+      <h3>云同步</h3>
+      <p class="note">同步功能没有加载：需要通过网址打开（不是直接双击 html 文件），并且联网。进度暂时只保存在这台设备上。</p>
+    </div>
+    <div class="panel">
+      <h3>每日计划</h3>
+      <div class="row"><label>新词<small>从没出现过的词</small></label><input type="number" min="0" max="999" id="sNew"></div>
+      <div class="row"><label>记住的<small>按遗忘曲线到期复习的熟词</small></label><input type="number" min="0" max="999" id="sKnown"></div>
+      <div class="row"><label>不确定的<small>点过“不认识/想起来了”的词</small></label><input type="number" min="0" max="999" id="sUnc"></div>
+      <div class="row"><label>复习词不足时提前复习<small>到期词不够数时，用最快到期的词补足</small></label><input type="checkbox" id="sFill"></div>
+      <div class="row"><label>新词随机抽取<small>关闭则按词书顺序（五十音）</small></label><input type="checkbox" id="sShuffle"></div>
+      <div class="row"><label>显示答案时自动发音</label><input type="checkbox" id="sSpeak"></div>
+      <div class="btnrow"><button class="btn primary" id="saveSettings">保存</button></div>
+      <p class="note" id="settingsNote"></p>
+    </div>
+    <div class="panel">
+      <h3>规则说明</h3>
+      <div class="note">
+        · 第一次出现就点“认识” → 本词今天过关。<br>
+        · 点了“不认识”（或之后点“想起来了”）→ 放到队列末尾，本轮还要<b>连续两次</b>点“认识”才算过关；中途再忘记就重新计两次。<br>
+        · 忘记后的词会在 10 个词以内再出现一次：忘记次数（累计点“不认识/想起来了/记错了”的次数）越多出现得越早，忘 1 次隔 9 个词，每多忘一次早一个，最少隔 3 个词。这次点“认识”后，它放到队尾，再认识一次就过关。<br>
+        · 之后几天复习时，忘记次数多的不确定词也优先被安排、更早出现。<br>
+        · 每一步都可以点左下角“太简单了”（包括看了提示、看了答案之后）：照样显示释义，本词过关，以后永远不再出现；点错了可以用“记错了”撤销。在“词书 → 单词列表”里筛选“太简单”可以恢复。<br>
+        · 所有词都过关，今天这一轮才算结束。<br>
+        · 点过“不认识/想起来了”的词归为<b>不确定</b>；之后连续两天第一次见到都点“认识”，才升级为<b>记住的</b>。<br>
+        · 复习间隔按艾宾浩斯曲线：1 → 2 → 4 → 7 → 15 → 30 → 60 → 120 天；一旦忘记，间隔重置。<br>
+        · 每天的分界线是凌晨 4 点。<br>
+        · 快捷键：<b>1</b> 左按钮，<b>2</b> 右按钮，<b>3</b> 太简单了，<b>Z</b> 上一个，<b>空格</b> 下一词，<b>S</b> 发音，<b>X</b> 记错了。
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="books/basic.js"></script>
+<script src="books/n2.js"></script>
+<script src="books/n1.js"></script>
+<script src="books/n2_red.js"></script>
+<script src="books/pos.js"></script>
+<script>
+"use strict";
+const KEY = 'jpvocab_v1';
+const INTERVALS = [1, 2, 4, 7, 15, 30, 60, 120, 240];
+const DAY_START_HOUR = 4;
+const NEED_AFTER_FAIL = 2;
+const MIN_GAP = 3;          // 忘记后至少隔几个词再出现
+const REVISIT_WITHIN = 10;  // 忘记后在几个词以内再出现
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function today(){
+  const d = new Date(Date.now() - DAY_START_HOUR * 3600e3);
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+}
+function dayLabel(n){ const d = new Date(n * 86400000); return (d.getUTCMonth()+1) + '/' + d.getUTCDate(); }
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/* ---------- 存储 ---------- */
+function defaultState(){
+  return {
+    v: 1,
+    settings: { book: 'basic', newCount: 50, knownCount: 50, uncertainCount: 100, fillAhead: false, shuffleNew: true, autoSpeak: true },
+    progress: {},   // id -> {status, stage, due, clean, seen, fails, lastDay, hist, t（最后修改时间，同步用）}
+    custom: [],     // 导入的词
+    session: null,  // 今日一轮（每台设备各自的，不同步）
+    log: {},        // 本设备的学习记录：day -> {n, r, ok, bad}
+    otherLogs: {},  // 其他设备同步来的学习记录：设备 id -> log
+    settingsT: 0    // 设置的最后修改时间
+  };
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){
+      const s = JSON.parse(raw), d = defaultState();
+      return Object.assign(d, s, { settings: Object.assign(d.settings, s.settings || {}) });
+    }
+  }catch(e){}
+  return defaultState();
+}
+/* ---------- 同步用的修改时间 ---------- */
+// 每次保存前和上次保存的内容比对：哪个词的进度变了，就给它盖上新的修改时间 t；
+// 被删掉的（撤销、清空进度）换成一条“未学”记录，好让别的设备也知道它被重置了。同步时每个词以 t 新的为准。
+let stampBase = null, settingsBase = null;
+const progJson = p => { const { t, ...rest } = p; return JSON.stringify(rest); };
+const blankProgress = day => ({ status:'new', stage:0, due:day, clean:0, seen:0, fails:0, hist:[] });
+function stampChanges(){
+  const P = state.progress, now = Date.now(), first = !stampBase;
+  if(first) stampBase = {};
+  for(const id in P){ const j = progJson(P[id]); if(stampBase[id] !== j){ if(!first) P[id].t = now; stampBase[id] = j; } }
+  for(const id in stampBase){ if(!P[id]){ P[id] = Object.assign(blankProgress(today()), { t: now }); stampBase[id] = progJson(P[id]); } }
+  const sj = JSON.stringify(state.settings);
+  if(settingsBase !== sj){ if(!first) state.settingsT = now; settingsBase = sj; }
+}
+let DEV = '';   // 本设备 id，用来区分各设备的学习记录
+try{ DEV = localStorage.getItem('jpvocab_dev') || ''; if(!DEV){ DEV = 'd' + Math.random().toString(36).slice(2, 10); localStorage.setItem('jpvocab_dev', DEV); } }
+catch(e){ DEV = 'd' + Math.random().toString(36).slice(2, 10); }
+
+let state = load();
+stampChanges();
+function save(){
+  stampChanges();
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch(e){ toast('保存失败：浏览器存储不可用'); }
+  if(window.onLocalSave) window.onLocalSave();   // sync.js：有改动就上传
+}
+
+/* ---------- 词书 ---------- */
+// DECK：所有词书里的全部单词（id → 词）；BOOKMAP：词书 id → {name, desc, ids, idSet}
+// 同一个词出现在多本书里时共用一份学习进度。
+let DECK = null, BOOKMAP = null;
+function deck(){
+  if(!DECK){
+    DECK = new Map(); BOOKMAP = new Map();
+    const list = (window.BOOKS || []).slice();
+    if(state.custom.length) list.push({ id:'custom', name:'我的导入', desc:'在下方“导入单词”里添加的词', words: state.custom });
+    for(const b of list){
+      const idSet = new Set();
+      for(const a of b.words){
+        if(!a || !a[0]) continue;
+        const w = { kana: a[0].trim(), kanji: (a[1] || a[0]).trim(), meaning: a[2] || '', ex: a[3] || '', exZh: a[4] || '' };
+        if(w.kanji.includes('[')){ w.furi = parseFuri(w.kanji); w.kanji = w.furi.map(x => x[0]).join(''); }
+        if(w.ex.includes('[')){ w.exSeg = parseFuri(w.ex); w.ex = w.exSeg.map(x => x[0]).join(''); }
+        w.id = w.kana + '|' + w.kanji;
+        w.pos = (window.POS || {})[w.id] || '';   // 词性，见 books/pos.js
+        if(!DECK.has(w.id)) DECK.set(w.id, w);
+        idSet.add(w.id);
+      }
+      BOOKMAP.set(b.id, { id:b.id, name:b.name, desc:b.desc || '', ids:[...idSet], idSet });
+    }
+  }
+  return DECK;
+}
+function books(){ deck(); return BOOKMAP; }
+function curBook(){
+  const m = books();
+  return m.get(state.settings.book) || m.values().next().value || { id:'', name:'（无词书）', desc:'', ids:[], idSet:new Set() };
+}
+/* ---------- 注音（振り仮名）：每个汉字对应自己的读音 ---------- */
+const isKanji = c => /[㐀-鿿豈-﫿々〆ヵヶ]/.test(c);
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// 导入用写法：家[か]族[ぞく]、食[た]べる
+function parseFuri(s){
+  const segs = []; let buf = '';
+  for(let i = 0; i < s.length; i++){
+    const c = s[i];
+    if(c !== '['){ buf += c; continue; }
+    const j = s.indexOf(']', i);
+    if(j < 0){ buf += s.slice(i); break; }
+    let k = buf.length; while(k > 0 && isKanji(buf[k - 1])) k--;
+    if(k === buf.length){ i = j; continue; }
+    if(k > 0) segs.push([buf.slice(0, k), null]);
+    segs.push([buf.slice(k), s.slice(i + 1, j)]);
+    buf = ''; i = j;
+  }
+  if(buf) segs.push([buf, null]);
+  return segs;
+}
+// 返回 [[文字, 读音或null], ...]：送假名自动对齐，多汉字词用 FURI_SPLIT 逐字拆分，拆不了就整词注音
+function furiSegments(w){
+  if(w.furi) return w.furi;
+  if(w._seg) return w._seg;
+  const k = w.kanji, r = w.kana;
+  let out;
+  if(k === r || ![...k].some(isKanji)) out = [[k, null]];
+  else{
+    const runs = [];
+    for(const c of k){ const kj = isKanji(c), last = runs[runs.length - 1]; if(last && last.kj === kj) last.t += c; else runs.push({ t:c, kj }); }
+    const m = r.match(new RegExp('^' + runs.map(x => x.kj ? '(.+?)' : escRe(x.t)).join('') + '$'));
+    if(!m) out = [[k, r]];
+    else{
+      out = []; let gi = 1;
+      const SPLIT = typeof FURI_SPLIT !== 'undefined' ? FURI_SPLIT : {};
+      for(const x of runs){
+        if(!x.kj){ out.push([x.t, null]); continue; }
+        const rd = m[gi++], chars = [...x.t], parts = SPLIT[x.t] ? SPLIT[x.t].split('|') : null;
+        if(chars.length === 1) out.push([x.t, rd]);
+        else if(parts && parts.length === chars.length && parts.join('') === rd) chars.forEach((c, i) => out.push([c, parts[i]]));
+        else out.push([x.t, rd]);
+      }
+    }
+  }
+  return (w._seg = out);
+}
+function rubyHtml(w){
+  return furiSegments(w).map(([t, rt]) => rt ? `<ruby>${esc(t)}<rt>${esc(rt)}</rt></ruby>` : esc(t)).join('');
+}
+
+const statusOf = id => (state.progress[id] && state.progress[id].status) || 'new';
+const failsOf = id => (state.progress[id] && state.progress[id].fails) || 0;
+
+/* ---------- 艾宾浩斯调度（每个词每天只按“当天第一次作答”结算一次） ---------- */
+function schedule(id, ok, result, day){
+  const p = state.progress[id] || (state.progress[id] = { status:'new', stage:0, due:day, clean:0, seen:0, fails:0, hist:[] });
+  p.seen++; p.lastDay = day;
+  pushHist(p, day, result);
+  if(ok){
+    if(p.status === 'new'){                 // 新词第一次就认识 → 记住的
+      p.status = 'known'; p.stage = 1; p.due = day + INTERVALS[0];
+    }else if(p.status === 'known'){         // 熟词继续拉长间隔
+      p.due = day + INTERVALS[Math.min(p.stage, INTERVALS.length - 1)];
+      p.stage++;
+    }else{                                  // 不确定的：连续两天无失误才升级
+      p.clean++;
+      if(p.clean >= 2){ p.status = 'known'; p.clean = 0; p.due = day + INTERVALS[2]; p.stage = 3; }
+      else p.due = day + 1;
+    }
+  }else{                                    // 不认识 / 想起来了 / 记错了
+    p.status = 'uncertain'; p.clean = 0; p.stage = 0; p.due = day + 1; p.fails++;
+  }
+}
+function pushHist(p, day, result){ p.hist = p.hist || []; p.hist.push([day, result]); if(p.hist.length > 40) p.hist.splice(0, p.hist.length - 40); }
+
+/* ---------- 今日计划 ---------- */
+function buildPlan(day){
+  const s = state.settings, news = [], known = [], unc = [];
+  // 新词只从当前词书里出；复习词来自所有学过的词（换书后旧书的词也会按遗忘曲线继续复习）
+  for(const id of curBook().ids){ const p = state.progress[id]; if(!p || p.status === 'new') news.push(id); }
+  for(const w of deck().values()){
+    const p = state.progress[w.id];
+    if(!p || p.status === 'new' || p.status === 'easy' || p.lastDay === day) continue;   // 未学 / 太简单 / 今天已经学过
+    (p.status === 'known' ? known : unc).push(w.id);
+  }
+  // byFails：到期词按忘记次数从多到少挑（次数相同随机）
+  const pickDue = (arr, n, byFails) => {
+    const sorted = arr.map(id => [id, state.progress[id].due]).sort((a, b) => a[1] - b[1]);
+    let due = sorted.filter(x => x[1] <= day).map(x => x[0]);
+    if(byFails) due = shuffle(due).sort((a, b) => failsOf(b) - failsOf(a));
+    let res = due.slice(0, n);
+    if(s.fillAhead && res.length < n) res = res.concat(sorted.filter(x => x[1] > day).map(x => x[0]).slice(0, n - res.length));
+    return res;
+  };
+  const groups = [
+    (s.shuffleNew ? shuffle(news) : news).slice(0, s.newCount).map(id => ({ id, type:'new' })),
+    shuffle(pickDue(known, s.knownCount)).map(id => ({ id, type:'known' })),
+    pickDue(unc, s.uncertainCount, true).map(id => ({ id, type:'uncertain' }))
+  ];
+  // 按剩余数量加权随机交错 → 新旧词均匀混合；组内顺序不变，忘记次数多的不确定词先出现
+  const out = [];
+  let left = groups.reduce((t, g) => t + g.length, 0);
+  while(left > 0){
+    let r = Math.random() * left;
+    for(const g of groups){ if(r < g.length){ out.push(g.shift()); break; } r -= g.length; }
+    left--;
+  }
+  return out;
+}
+function newSession(day, round){
+  const plan = buildPlan(day), items = {};
+  plan.forEach(x => items[x.id] = { id:x.id, type:x.type, answered:false, need:0, failed:false, passed:false });
+  const S = { sid: Date.now(), day, round: round || 1, items, queue: plan.map(x => x.id), cur: null, lastId: null };
+  pullNext(S);
+  return S;
+}
+// 刚忘记的词不进普通队列，而是约定在第 at 张卡再出现一次：忘 1 次隔 9 个词（10 个词以内），
+// 每多忘一次早一个，最少隔 MIN_GAP 个。重现时点了认识（还差一次）就放到普通队列的队尾。
+function requeueSoon(S, id){
+  const gap = Math.max(MIN_GAP, REVISIT_WITHIN - failsOf(id));
+  (S.soon = S.soon || []).push({ id, at: (S.n || 0) + gap + 1 });
+}
+// 取下一张卡：先出到点的忘记词（同时到点的，忘记次数多的先）；否则从队首取，
+// 刚刚出现过的词不会立刻再出现（除非只剩它一个）
+function pullNext(S){
+  const ok = id => deck().has(id) && S.items[id] && !S.items[id].passed;
+  S.queue = S.queue.filter(ok);
+  S.soon = (S.soon || []).filter(x => ok(x.id)).sort((a, b) => failsOf(b.id) - failsOf(a.id) || a.at - b.at);
+  S.n = (S.n || 0) + 1;
+  const due = S.soon.find(x => x.at <= S.n);
+  if(due){ S.soon.splice(S.soon.indexOf(due), 1); S.cur = due.id; return; }
+  if(!S.queue.length){ S.queue = S.soon.map(x => x.id); S.soon = []; }   // 普通词出完了，等待中的忘记词提前出
+  if(!S.queue.length){ S.cur = null; return; }
+  let idx = 0;
+  if(S.queue.length > 1 && S.queue[0] === S.lastId) idx = 1;
+  S.cur = S.queue.splice(idx, 1)[0];
+}
+function ensureSession(){
+  const d = today();
+  if(!state.session || state.session.day !== d){
+    state.session = newSession(d, 1);
+    save();
+  }
+}
+
+/* ---------- 作答 ---------- */
+let ui = { phase:'front', result:null };   // front → hint → full；base：点“记错了”前的结果（know / easy）
+let undo = null;   // “上一个”：上一词作答前的快照（只存在内存里，刷新页面后就没有了）
+
+function commit(){
+  const S = state.session, id = S.cur, it = S.items[id], result = ui.result;
+  undo = { sid:S.sid, day:S.day, id, ui:{ ...ui }, session:JSON.stringify(S),
+           p: state.progress[id] ? JSON.stringify(state.progress[id]) : null,
+           log: state.log[S.day] ? JSON.stringify(state.log[S.day]) : null };
+  const easy = result === 'easy', ok = result === 'know' || easy;
+  if(!it.answered){
+    it.answered = true;
+    schedule(id, ok, result, S.day);
+    const L = state.log[S.day] || (state.log[S.day] = { n:0, r:0, ok:0, bad:0 });
+    it.type === 'new' ? L.n++ : L.r++;
+    ok ? L.ok++ : L.bad++;
+  }else{
+    const p = state.progress[id]; if(p){ pushHist(p, S.day, result); if(!ok) p.fails++; }
+  }
+  if(easy){                                  // 太简单：本词过关，以后永远不再出现
+    state.progress[id].status = 'easy'; it.need = 0; it.passed = true;
+  }else if(ok){
+    if(it.need > 0){ it.need--; if(it.need === 0) it.passed = true; else S.queue.push(id); }   // 放到队尾
+    else it.passed = true;
+  }else{
+    it.failed = true; it.need = NEED_AFTER_FAIL; requeueSoon(S, id);
+  }
+  S.lastId = id;
+  pullNext(S);
+  ui = { phase:'front', result:null };
+  save();
+}
+
+// 回到上一词的答案页：作答前的会话、学习进度、当天记录全部还原，可以改成记错了 / 太简单再继续
+function canUndo(){ return !!undo && undo.sid === state.session.sid; }
+function goBack(){
+  if(!canUndo()) return;
+  const u = undo; undo = null;
+  state.session = JSON.parse(u.session);
+  if(u.p) state.progress[u.id] = JSON.parse(u.p); else delete state.progress[u.id];
+  if(u.log) state.log[u.day] = JSON.parse(u.log); else delete state.log[u.day];
+  ui = u.ui;
+  save();
+}
+function act(a){
+  const S = state.session;
+  if(a === 'know'){ ui = { phase:'full', result:'know', base:'know' }; onReveal(); }
+  else if(a === 'easy'){ const shown = ui.phase === 'full'; ui = { phase:'full', result:'easy', base:'easy' }; if(!shown) onReveal(); }
+  else if(a === 'unknown'){ ui = { phase:'hint', result:null }; }
+  else if(a === 'recall'){ ui = { phase:'full', result:'recall' }; onReveal(); }
+  else if(a === 'forget'){ ui = { phase:'full', result:'forget' }; onReveal(); }
+  else if(a === 'wrong'){ ui.result = ui.result === 'wrong' ? ui.base : 'wrong'; }
+  else if(a === 'next'){
+    commit();
+    if(today() !== S.day){ state.session = newSession(today(), 1); save(); toast('已经是新的一天，已生成今日计划'); }
+  }
+  else if(a === 'back') goBack();
+  else if(a === 'speak'){ const w = deck().get(S.cur); if(w) speakWord(w); return; }
+  else if(a === 'speakEx'){ const w = deck().get(S.cur); if(w) speak(w.ex); return; }
+  else if(a === 'books'){ showTab('library'); return; }
+  else if(a === 'more'){ state.session = newSession(today(), (S.round || 1) + 1); save(); }
+  renderStudy();
+}
+function onReveal(){
+  const w = deck().get(state.session.cur);
+  if(w && state.settings.autoSpeak) speakWord(w);
+}
+
+/* ---------- 发音 ---------- */
+let jaVoice = null;
+function pickVoice(){ try{ jaVoice = speechSynthesis.getVoices().find(v => /^ja/i.test(v.lang)) || null; }catch(e){} }
+if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+// 单词按读音发音，但先转成片假名：纯平假名的「しはい」会被语音引擎把「は」当助词读成「わ」，「シハイ」不会
+function speakWord(w){ speak(w.kana.replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60))); }
+function speak(text){
+  try{
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP'; u.rate = 0.9; if(jaVoice) u.voice = jaVoice;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ---------- 渲染：学习 ---------- */
+// 例句：带注音，并高亮本词
+function exHtml(w){
+  const plain = w.ex, segs = w.exSeg || [[plain, null]];
+  const stem = w.kanji.replace(/[ぁ-ゖ]+$/, '');   // 接する → 接
+  const cands = [w.kanji, w.kanji.length > 1 ? w.kanji.slice(0, -1) : null, stem !== w.kanji ? stem : null, w.kana, w.kana.length > 2 ? w.kana.slice(0, -1) : null].filter(Boolean);
+  let start = -1, end = -1;
+  for(const c of cands){ const i = plain.indexOf(c); if(i >= 0){ start = i; end = i + c.length; break; } }
+  let pos = 0, out = '';
+  for(const [t, rt] of segs){
+    const a = pos, b = pos + t.length; pos = b;
+    const hit = start >= 0 && a < end && b > start;
+    if(rt){ const r = `<ruby>${esc(t)}<rt>${esc(rt)}</rt></ruby>`; out += hit ? `<mark>${r}</mark>` : r; continue; }
+    if(!hit){ out += esc(t); continue; }
+    const s1 = Math.max(start, a) - a, e1 = Math.min(end, b) - a;
+    out += esc(t.slice(0, s1)) + '<mark>' + esc(t.slice(s1, e1)) + '</mark>' + esc(t.slice(e1));
+  }
+  return out;
+}
+function renderStudy(){
+  const S = state.session, items = Object.values(S.items).filter(i => deck().has(i.id));
+  const total = items.length, g = items.filter(i => i.passed).length, lg = items.filter(i => i.failed && !i.passed).length;
+  $('#barG').style.width = total ? (g / total * 100) + '%' : '0';
+  $('#barLG').style.width = total ? (lg / total * 100) + '%' : '0';
+  const cnt = t => items.filter(i => i.type === t).length;
+  $('#ptext').innerHTML =
+    `<span><i class="dot" style="background:var(--green)"></i>已过关 ${g}　<i class="dot" style="background:var(--lg)"></i>忘记待巩固 ${lg}　<i class="dot" style="background:var(--grey)"></i>未学 ${total - g - lg}</span>` +
+    `<span>${S.round > 1 ? '加练第' + (S.round - 1) + '组 · ' : ''}新 ${cnt('new')} · 熟 ${cnt('known')} · 不确定 ${cnt('uncertain')}</span>`;
+  const B = curBook(), bLearned = B.ids.filter(id => statusOf(id) !== 'new').length;
+  $('#bookchip').innerHTML = `📘 ${esc(B.name)}<span>${bLearned} / ${B.ids.length} ›</span>`;
+
+  const st = $('#stage');
+  const bookDone = B.ids.length > 0 && bLearned === B.ids.length;
+  if(!total){
+    st.innerHTML = `<div class="done"><div class="big">📭</div><h2>今天没有要学的词</h2>
+      ${bookDone ? `<p>《${esc(B.name)}》的新词已经全部学完，复习词今天也都完成了。</p>`
+                 : '<p>没有新词，也没有到期的复习词。</p><p>可以在“设置”里打开“提前复习”。</p>'}
+      <button class="pill" data-act="books">换一本词书</button></div>`;
+    return;
+  }
+  if(!S.cur){
+    const firstOk = items.filter(i => !i.failed).length;
+    st.innerHTML = `<div class="done"><div class="big">🎉</div><h2>今日任务完成</h2>
+      <p>共 ${total} 个词，一次认识 ${firstOk} 个，忘记后巩固 ${total - firstOk} 个</p>
+      <p>不确定的词明天还会出现，连续两天都认识就会升级为“记住的”。</p>
+      ${bookDone ? `<p>《${esc(B.name)}》的新词已经全部学完了。</p><button class="pill" data-act="books">换一本词书</button>`
+                 : '<button class="pill" data-act="more">再学一组</button>'}</div>`;
+    return;
+  }
+  const w = deck().get(S.cur), it = S.items[S.cur], ph = ui.phase;
+  const tag = { new:'新词', known:'复习', uncertain:'不确定' }[it.type];
+  const onlyOne = S.queue.length === 0 && !(S.soon && S.soon.length) && it.need > 0;
+  let h = `<div class="card ${ph !== 'front' ? 'revealed' : ''}">
+    <div class="meta"><span><span class="tag t-${it.type}">${tag}</span>${failsOf(S.cur) ? ` <span class="tag">忘记 ${failsOf(S.cur)} 次</span>` : ''}</span>${it.need > 0 ? `<span class="need">再连续认识 ${it.need} 次过关</span>` : ''}</div>
+`;
+  if(ph === 'front'){
+    h += `<div class="kana">${esc(w.kana)}</div><div class="ask">${onlyOne ? '只剩这个词了，再巩固一次' : '你认识这个词吗？'}</div>`;
+  }else{
+    h += `<div class="word ${w.kanji === w.kana ? 'kana-only' : ''}">${rubyHtml(w)}</div>`;
+    if(ph === 'full'){
+      h += `<div class="reading"><button class="speak" data-act="speak" title="读音 (S)">🔊</button><span>读音</span></div>
+            ${posHtml(w)}<div class="meaning">${esc(w.meaning)}</div>`;
+    }
+    if(w.ex){
+      h += `<div class="ex"><div class="ex-jp">${exHtml(w)}${ph === 'full' ? ' <button class="speak sm" data-act="speakEx" title="例句发音">🔊</button>' : ''}</div>
+            ${ph === 'full' && w.exZh ? `<div class="ex-zh">${esc(w.exZh)}</div>` : ''}</div>`;
+    }
+    if(ph === 'hint') h += `<div class="ask">看了汉字和例句，想起来了吗？</div>`;
+    if(ph === 'full') h += `<div class="result">${resultText(it)}</div>`;
+  }
+  h += `</div><div class="actions">`;
+  if(ph === 'front') h += `<button class="primary" data-act="know">认识<kbd>1</kbd></button><button data-act="unknown">不认识<kbd>2</kbd></button>`;
+  else if(ph === 'hint') h += `<button class="primary" data-act="recall">想起来了<kbd>1</kbd></button><button class="danger" data-act="forget">不认识<kbd>2</kbd></button>`;
+  else h += `<button class="primary" data-act="next">下一词<kbd>空格</kbd></button>`;
+  // “太简单了”每个阶段都有（已经选了太简单时不再显示）；“记错了”只在点过认识 / 太简单之后出现；
+  // “上一个”只在新词刚出现（只有假名）时出现
+  h += `</div><div class="subact">${ui.result !== 'easy' ? '<button class="easy" data-act="easy">太简单了 (3)</button>' : ''}${
+        ph === 'front' && canUndo() ? '<button data-act="back">上一个 (Z)</button>'
+      : ph === 'full' && ui.base ? `<button data-act="wrong">${ui.result === 'wrong' ? '撤销“记错了”' : '记错了 (X)'}</button>` : ''}</div>`;
+  st.innerHTML = h;
+}
+// 词性：“名词 / サ变动词·他动” → 每个词性一枚标签，动词的活用类和自他分开显示
+function posHtml(w){
+  if(!w.pos) return '';
+  return `<div class="pos">${w.pos.split(' / ').map(p => p.split('·').map(x => `<span>${esc(x)}</span>`).join('')).join('<i>/</i>')}</div>`;
+}
+function resultText(it){
+  const r = ui.result;
+  if(r === 'easy') return '<b class="ok">✓ 太简单了</b> · 以后不会再出现（可在“词书”里恢复）';
+  if(r === 'know'){
+    if(it.need === 0) return '<b class="ok">✓ 认识</b> · 本词今天过关';
+    return it.need - 1 === 0 ? '<b class="ok">✓ 认识</b> · 巩固完成，本词过关' : `<b class="ok">✓ 认识</b> · 还需再认识 ${it.need - 1} 次`;
+  }
+  const label = { recall:'想起来了', forget:'不认识', wrong:'记错了' }[r];
+  return `<b class="bad">${label}</b> · 忘记 ${failsOf(state.session.cur) + 1} 次，${REVISIT_WITHIN} 个词以内会再出现，本轮还需连续认识 ${NEED_AFTER_FAIL} 次`;
+}
+
+/* ---------- 渲染：统计 ---------- */
+// 本设备和其他设备的学习记录按天相加
+function allLogs(){
+  const out = {};
+  for(const log of [state.log, ...Object.values(state.otherLogs || {})])
+    for(const k in log){ const a = out[k] || (out[k] = { n:0, r:0, ok:0, bad:0 }), b = log[k]; a.n += b.n; a.r += b.r; a.ok += b.ok; a.bad += b.bad; }
+  return out;
+}
+function renderStats(){
+  const d = today(); let nNew = 0, nKnown = 0, nUnc = 0, nEasy = 0, dueK = 0, dueU = 0;
+  const fc = new Array(7).fill(0);
+  for(const w of deck().values()){
+    const p = state.progress[w.id];
+    if(!p || p.status === 'new'){ nNew++; continue; }
+    if(p.status === 'easy'){ nEasy++; continue; }
+    p.status === 'known' ? nKnown++ : nUnc++;
+    if(p.due <= d && p.lastDay !== d) p.status === 'known' ? dueK++ : dueU++;
+    const k = Math.max(0, p.due - d); if(k < 7 && !(k === 0 && p.lastDay === d)) fc[k]++;
+  }
+  const mx = Math.max(1, ...fc);
+  const LOG = allLogs();
+  const days = Object.keys(LOG).map(Number).sort((a, b) => b - a).slice(0, 14);
+  let streak = 0; for(let k = d; LOG[k]; k--) streak++;
+  $('#stats').innerHTML = `
+    <div class="panel"><h3>词汇掌握</h3><div class="grid3">
+      <div class="stat"><div class="n">${nNew}</div><div class="l">未学新词</div></div>
+      <div class="stat"><div class="n" style="color:var(--green)">${nKnown}</div><div class="l">记住的</div></div>
+      <div class="stat"><div class="n" style="color:var(--amber)">${nUnc}</div><div class="l">不确定的</div></div>
+    </div><p class="note" style="margin-top:12px">太简单（不再出现）${nEasy}　·　今日剩余到期：熟词 ${dueK}，不确定 ${dueU}　·　连续打卡 ${streak} 天</p></div>
+    <div class="panel"><h3>未来 7 天到期复习量</h3><div class="fc">
+      ${fc.map((n, i) => `<div><b>${n}</b><i style="height:${n / mx * 80}%"></i>${i === 0 ? '今天' : dayLabel(d + i)}</div>`).join('')}
+    </div></div>
+    <div class="panel"><h3>学习记录</h3>${days.length ? days.map(k => { const L = LOG[k];
+      return `<div class="row"><label>${k === d ? '今天' : dayLabel(k)}</label><span class="note">新词 ${L.n} · 复习 ${L.r} · 一次认识 ${L.ok} · 忘记 ${L.bad}</span></div>`; }).join('') : '<p class="note">还没有记录</p>'}</div>`;
+}
+
+/* ---------- 渲染：词书 ---------- */
+let libFilter = { q:'', s:'all', b:null };
+function renderLibrary(){
+  const el = $('#library');
+  if(!el.dataset.ready){
+    el.dataset.ready = 1;
+    el.innerHTML = `
+      <div class="panel"><h3>选择词书</h3>
+        <div class="books" id="bookList"></div>
+        <p class="note" style="margin:10px 0 0">新词只从当前词书里出；以前学过的词（不管哪本书）都会继续按遗忘曲线复习。同一个词出现在几本书里时，进度是共用的。</p></div>
+      <div class="panel"><h3>单词列表 <span class="note" id="libCount"></span></h3>
+        <div class="filters"><select id="libB"></select><select id="libS">
+          <option value="all">全部状态</option><option value="new">未学</option><option value="known">记住的</option><option value="uncertain">不确定的</option><option value="easy">太简单</option></select></div>
+        <div class="filters" style="margin-top:8px"><input id="libQ" placeholder="搜索假名 / 汉字 / 中文"></div>
+        <div class="list" id="libList"></div></div>
+      <div class="panel"><h3>导入单词</h3>
+        <p class="note">每行一个词，字段用 Tab 或英文逗号分隔：<br><b>假名, 汉字, 中文意思, 例句, 例句翻译</b>（汉字和例句可留空；Excel 复制过来的 Tab 分隔也可以）<br>
+          注音会自动按送假名对齐；多汉字词想逐字注音，可写成 <b>家[か]族[ぞく]</b>。例句也可以这样写：<b>家[か]族[ぞく]は四[よ]人[にん]です。</b></p>
+        <textarea id="impText" placeholder="ねこ,猫,猫,うちには猫がいます。,我家有猫。"></textarea>
+        <div class="btnrow"><button class="btn primary" id="impBtn">导入</button></div></div>
+      <div class="panel"><h3>备份</h3>
+        <p class="note">学习进度保存在本浏览器里。换浏览器/电脑前请先导出备份。</p>
+        <div class="btnrow"><button class="btn" id="expBtn">导出备份</button><button class="btn" id="bakBtn">导入备份</button>
+          <button class="btn danger" id="resetBtn">清空学习进度</button><input type="file" id="bakFile" accept=".json" hidden></div></div>`;
+    $('#libQ').oninput = e => { libFilter.q = e.target.value.trim(); drawList(); };
+    $('#libS').onchange = e => { libFilter.s = e.target.value; drawList(); };
+    $('#libB').onchange = e => { libFilter.b = e.target.value; drawList(); };
+    $('#bookList').onclick = e => { const b = e.target.closest('[data-book]'); if(b) setBook(b.dataset.book); };
+    $('#libList').onclick = e => {   // “太简单”的词恢复为记住的词，明天开始按遗忘曲线复习
+      const b = e.target.closest('[data-restore]'), p = b && state.progress[b.dataset.restore];
+      if(!p) return;
+      Object.assign(p, { status:'known', stage:1, due:today() + 1 });
+      save(); drawBooks(); drawList(); toast('已恢复，明天开始复习');
+    };
+    $('#impBtn').onclick = importWords;
+    $('#expBtn').onclick = exportBackup;
+    $('#bakBtn').onclick = () => $('#bakFile').click();
+    $('#bakFile').onchange = importBackup;
+    $('#resetBtn').onclick = () => {
+      if(!confirm('确定清空全部学习进度？词书和导入的单词会保留。')) return;
+      state.progress = {}; state.log = {}; state.session = null; ensureSession(); save(); drawBooks(); drawList(); toast('学习进度已清空');
+    };
+  }
+  drawBooks();
+  drawList();
+}
+function drawBooks(){
+  if(!$('#bookList')) return;   // 词书页还没打开过
+  const cur = curBook().id;
+  $('#bookList').innerHTML = [...books().values()].map(b => {
+    let k = 0, u = 0;
+    let e = 0;
+    for(const id of b.ids){ const s = statusOf(id); if(s === 'known') k++; else if(s === 'uncertain') u++; else if(s === 'easy') e++; }
+    const n = b.ids.length || 1, on = b.id === cur;
+    return `<div class="book ${on ? 'on' : ''}">
+      <div class="bn">${esc(b.name)}</div>
+      <button data-book="${esc(b.id)}" ${on ? 'disabled' : ''}>${on ? '学习中' : '选这本'}</button>
+      <div class="bd">${esc(b.desc)}</div>
+      <div class="bb"><i style="width:${k / n * 100}%;background:var(--green)"></i><i style="width:${u / n * 100}%;background:var(--amber)"></i></div>
+      <div class="bs">共 ${b.ids.length} 词 · 已学 ${k + u + e}（记住 ${k} · 不确定 ${u}${e ? ` · 太简单 ${e}` : ''}） · 未学 ${b.ids.length - k - u - e}</div></div>`;
+  }).join('');
+  const sel = $('#libB'), opts = [['all', '全部词书'], ...[...books().values()].map(b => [b.id, b.name])];
+  if(!libFilter.b || (libFilter.b !== 'all' && !books().has(libFilter.b))) libFilter.b = cur;
+  sel.innerHTML = opts.map(([v, t]) => `<option value="${esc(v)}" ${v === libFilter.b ? 'selected' : ''}>${esc(t)}</option>`).join('');
+}
+function setBook(id){
+  if(!books().has(id) || id === state.settings.book) return;
+  state.settings.book = id;
+  const S = state.session, started = S && Object.values(S.items).some(i => i.answered);
+  const name = books().get(id).name;
+  if(!started || !S.cur){
+    state.session = newSession(today(), started ? (S.round || 1) + 1 : (S ? S.round : 1));
+    toast(`已切换到《${name}》，${started ? '已开始新的一组' : '今日计划已重新生成'}`);
+  }else toast(`已切换到《${name}》，今天这一组学完后，新词就从这本书里出`);
+  save(); libFilter.b = id; drawBooks(); drawList();
+}
+function drawList(){
+  if(!$('#libList')) return;
+  const q = libFilter.q, d = today(), B = libFilter.b === 'all' ? null : books().get(libFilter.b);
+  const pool = B ? B.ids.map(id => deck().get(id)) : [...deck().values()];
+  const rows = pool.filter(w => (libFilter.s === 'all' || statusOf(w.id) === libFilter.s) &&
+    (!q || w.kana.includes(q) || w.kanji.includes(q) || w.meaning.includes(q)));
+  $('#libCount').textContent = `（${rows.length} / ${pool.length}）`;
+  const lbl = { new:'未学', known:'记住的', uncertain:'不确定', easy:'太简单' };
+  $('#libList').innerHTML = rows.slice(0, 500).map(w => {
+    const p = state.progress[w.id], s = statusOf(w.id);
+    const due = p && s !== 'new' && s !== 'easy' ? (p.due <= d ? ' · 今天' : ' · ' + dayLabel(p.due)) : '';
+    const st = s === 'easy' ? `<button class="s easy" data-restore="${esc(w.id)}" title="恢复为记住的词，明天开始复习">太简单 · 恢复</button>`
+                            : `<span class="s ${s}">${lbl[s]}${due}</span>`;
+    return `<div class="wl"><span>${esc(w.kana)}</span><span>${esc(w.kanji)}</span><span class="m note">${w.pos ? `<small>[${esc(w.pos)}]</small>` : ''}${esc(w.meaning)}</span>${st}</div>`;
+  }).join('') + (rows.length > 500 ? `<p class="note">只显示前 500 个，请用搜索缩小范围</p>` : '');
+}
+function importWords(){
+  const lines = $('#impText').value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  let added = 0, dup = 0;
+  for(const line of lines){
+    const f = (line.includes('\t') ? line.split('\t') : line.split(',')).map(x => x.trim());
+    if(!f[0] || /^(假名|kana)$/i.test(f[0])) continue;
+    const id = f[0] + '|' + (f[1] || f[0]).replace(/\[[^\]]*\]/g, '');
+    if(deck().has(id)){ dup++; continue; }
+    state.custom.push([f[0], f[1] || f[0], f[2] || '', f[3] || '', f[4] || '']);
+    DECK = null; added++;
+  }
+  save(); $('#impText').value = ''; drawBooks(); drawList();
+  toast(`导入 ${added} 个词到《我的导入》${dup ? `，跳过重复 ${dup} 个` : ''}${added ? '；选这本书就能学' : ''}`);
+}
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(state)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `jpvocab-backup-${dayLabel(today()).replace('/', '-')}.json`;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function importBackup(e){
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const s = JSON.parse(r.result);
+      if(!s || typeof s.progress !== 'object') throw 0;
+      if(!confirm('导入备份会覆盖当前的学习进度，确定吗？')) return;
+      const d = defaultState();
+      state = Object.assign(d, s, { settings: Object.assign(d.settings, s.settings || {}) });
+      DECK = null; ensureSession(); save(); loadSettingsForm(); drawBooks(); drawList(); renderStudy(); toast('备份已导入');
+    }catch(err){ toast('文件格式不对'); }
+    e.target.value = '';
+  };
+  r.readAsText(f);
+}
+
+/* ---------- 设置 ---------- */
+function loadSettingsForm(){
+  const s = state.settings;
+  $('#sNew').value = s.newCount; $('#sKnown').value = s.knownCount; $('#sUnc').value = s.uncertainCount;
+  $('#sFill').checked = s.fillAhead; $('#sShuffle').checked = s.shuffleNew; $('#sSpeak').checked = s.autoSpeak;
+}
+$('#saveSettings').onclick = () => {
+  const n = v => Math.max(0, Math.min(999, parseInt(v, 10) || 0));
+  Object.assign(state.settings, {
+    newCount: n($('#sNew').value), knownCount: n($('#sKnown').value), uncertainCount: n($('#sUnc').value),
+    fillAhead: $('#sFill').checked, shuffleNew: $('#sShuffle').checked, autoSpeak: $('#sSpeak').checked
+  });
+  loadSettingsForm();
+  const S = state.session, started = S && Object.values(S.items).some(i => i.answered);
+  if(!started){ state.session = newSession(today(), S ? S.round : 1); $('#settingsNote').textContent = '已保存，今日计划已按新设置重新生成。'; }
+  else $('#settingsNote').textContent = '已保存。今天这一轮已经开始，新的数量从下一组 / 明天开始生效。';
+  save();
+};
+
+/* ---------- 通用 ---------- */
+let toastTimer;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 2200); }
+function showTab(tab){
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === tab));
+  if(tab === 'study'){ ensureSession(); renderStudy(); }
+  if(tab === 'stats') renderStats();
+  if(tab === 'library') renderLibrary();
+  if(tab === 'settings') { loadSettingsForm(); $('#settingsNote').textContent = ''; }
+}
+$('#nav').onclick = e => { const b = e.target.closest('button'); if(b) showTab(b.dataset.tab); };
+$('#study').onclick = e => { const b = e.target.closest('[data-act]'); if(b){ b.blur(); act(b.dataset.act); } };
+document.addEventListener('keydown', e => {
+  if(!$('#study').classList.contains('on') || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
+  const S = state.session; if(!S || !S.cur) return;
+  const k = e.key.toLowerCase(), ph = ui.phase;
+  let a = null;
+  if(k === '3' && ui.result !== 'easy') a = 'easy';
+  else if(k === 'z' && ph === 'front' && canUndo()) a = 'back';
+  else if(ph === 'front') a = k === '1' || k === 'arrowleft' ? 'know' : k === '2' || k === 'arrowright' ? 'unknown' : null;
+  else if(ph === 'hint') a = k === '1' || k === 'arrowleft' ? 'recall' : k === '2' || k === 'arrowright' ? 'forget' : null;
+  else if(k === ' ' || k === 'enter') a = 'next';
+  else if(k === 'x' && ui.base) a = 'wrong';
+  if(k === 's' && ph === 'full') a = 'speak';
+  if(a){ e.preventDefault(); act(a); }
+});
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden && state.session && state.session.day !== today() && $('#study').classList.contains('on') && ui.phase === 'front'){
+    ensureSession(); renderStudy();
+  }
+});
+
+/* ---------- 给 sync.js 用的接口 ---------- */
+// 把云端更新的内容合并进来：每个词以修改时间新的为准；今天已经在别的设备上学过（或标成太简单）的词，从本轮里去掉
+function refreshView(){
+  const tab = (document.querySelector('#nav button.on') || {}).dataset.tab;
+  if(tab === 'study') renderStudy();
+  if(tab === 'stats') renderStats();
+  if(tab === 'library'){ drawBooks(); drawList(); }
+}
+function applyRemoteProgress(entries){
+  const S = state.session; let n = 0, curGone = false;
+  for(const id in entries){
+    const r = entries[id], l = state.progress[id];
+    if(l && (r.t || 0) <= (l.t || 0)) continue;
+    state.progress[id] = r; stampBase[id] = progJson(r); n++;
+    const it = S && S.items[id];
+    if(it && !it.answered && !it.passed && (r.lastDay === S.day || r.status === 'easy')){ it.passed = true; if(id === S.cur) curGone = true; }
+  }
+  if(!n) return 0;
+  undo = null;
+  if(S && !Object.values(S.items).some(i => i.answered) && ui.phase === 'front') state.session = newSession(today(), S.round);   // 还没开始学：按合并后的进度重新排今天的计划
+  else if(curGone && ui.phase === 'front') pullNext(S);
+  save(); refreshView();
+  return n;
+}
+// 设置以修改时间新的为准；导入的单词取并集；其他设备的学习记录只读
+function applyRemoteMeta(m){
+  if(!m) return;
+  if(m.settings && (m.settingsT || 0) > (state.settingsT || 0)){
+    state.settings = Object.assign(defaultState().settings, JSON.parse(m.settings));
+    state.settingsT = m.settingsT; settingsBase = JSON.stringify(state.settings);
+    const S = state.session;
+    if(S && !Object.values(S.items).some(i => i.answered) && ui.phase === 'front') state.session = newSession(today(), S.round);
+  }
+  if(m.custom){
+    const idOf = a => a[0] + '|' + (a[1] || a[0]).replace(/\[[^\]]*\]/g, '');
+    const have = new Set(state.custom.map(idOf));
+    for(const a of JSON.parse(m.custom)) if(!have.has(idOf(a))){ state.custom.push(a); have.add(idOf(a)); DECK = null; }
+  }
+  state.otherLogs = {};
+  for(const dev in (m.logs || {})) if(dev !== DEV) state.otherLogs[dev] = JSON.parse(m.logs[dev]);
+  save(); refreshView();
+}
+window.APP = { get state(){ return state; }, DEV, applyRemoteProgress, applyRemoteMeta, toast };
+
+ensureSession();
+renderStudy();
+</script>
+<script type="module" src="sync.js"></script>
+<script>
+// 通过网址打开时注册离线缓存（直接双击打开 html 文件时不支持，也不需要）
+if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
